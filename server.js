@@ -2,9 +2,35 @@ const express = require('express');
 
 const app = express();
 
+
+const database ={
+    users: [
+        {
+            id: "123",
+            name: "florin",
+            email: "florinemail",
+            passowr: "florinpassword",
+            entries: 0,
+            joined: new Date()
+        },
+        {
+            id: "1233",
+            name: "marian",
+            email: "marianemail",
+            passowr: "marianpassword",
+            entries: 0,
+            joined: new Date()
+        }
+    ]
+}
+
 app.get('/',(req, resp) =>{
     resp.send("this is working")
 })
+
+app.post('/signin', (req,res) => {
+    res.json("the signin is working");
+});
 
 app.listen(3000, () => {
     console.log("app is running on port 3000")
@@ -21,3 +47,5 @@ si de user id cu GET.req.params /profile/:userID
 
 
 */
+
+// Bulding routes for app
