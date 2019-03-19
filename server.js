@@ -1,72 +1,65 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require('express')
+const app = express()
+var bodyParser = require('body-parser')
+var cors = require('cors')
 
-const app = express();
-app.use(bodyParser.json());
-const database ={
-    users: [
-        {
-            id: "123",
-            name: "florin",
-            email: "florinemail",
-            password: "florinpassword",
-            entries: 0,
-            joined: new Date()
-        },
-        {
-            id: "1233",
-            name: "marian",
-            email: "marianemail",
-            password: "marianpassword",
-            entries: 0,
-            joined: new Date()
-        }
-    ]
+const database = {
+  users: [{
+    id: '123',
+    name: 'Andrei',
+    email: 'john@gmail.com',
+    entries: 0,
+    joined: new Date()
+  }],
+  secrets: {
+    users_id: '123',
+    hash: 'wghhh'
+  }
 }
 
-app.get('/',(req, resp) =>{
-    resp.send(database.users)
+app.use(cors());
+app.use(bodyParser.json());
+app.get('/', (req, res) => res.send('Hello World!'))
+
+app.post('/signin', (req, res) => {
+  var a = JSON.parse(req.body);
+  if (a.username === database.users[0].email && a.password === database.secrets.hash) {
+    res.send('success');
+  } else {
+    res.json('access denied');
+  }
 })
 
-app.post('/signin', (req,res) => {
-    if(req.body.email === database.users[0].email && 
-        req.body.password ===database.users[0].password) {
-            res.json("the signin is working");
-        }
-        else {
-            res.status(404).json('error logging in')
-
+app.post('/findface', (req, res) => {
+  database.users.forEach(user => {
+    if (user.email === req.body.email) {
+      user.entries++
+      res.json(user)
     }
-});
-
-app.post('/register', (req, res)=> {
-    const {email, name, password} =req.body;
-    database.users.push({
-        
-        id: "125",
-        name: name,
-        email: email,
-        password: password,
-        entries: 0,
-        joined: new Date()
-    })
-    res.json(database.users[database.users.length-1]);
+  });
+  res.json('nope')
 })
 
-app.listen(3000, () => {
-    console.log("app is running on port 3000")
-});
 
+app.post('/register', (req, res) => {
+  database.users.push({
+    id: '124',
+    name: req.body.name,
+    email: req.body.email,
+    entries: 0,
+    joined: new Date()
+  })
+  res.json(database.users[database.users.length - 1])
+})
 
-/*
-Vrem sa avem un root request 
-un signin sa fie de tipul poost req.post si sa raspunda cu succes sau fail
-un register --> post req.post = return the new created user object
-sa avem abilitatea de a accesa profilul userului creat, deci ne putem folo
-si de user id cu GET.req.params /profile/:userID
-/image --> PUt pt ca in felul asta putem updata userul care deja exista
+app.get('/profile/:userId', (req, res) => {
+  database.users.forEach(user => {
+    if (user.id === req.params.userId) {
+      return res.json(user);
+    }
+  })
+  // res.json('no user')
 
+})
 
-*/
-
-// Bulding routes for app
+app.listen(3010, () => console.log('Example app listening on port 3010!'))
