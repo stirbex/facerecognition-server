@@ -1,8 +1,13 @@
-const express = require('express')
-const app = express()
-var bodyParser = require('body-parser')
-var cors = require('cors');
-const knex = require('knex')
+const express = require('express');
+const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt-nodejs');
+const cors = require('cors');
+const knex = require('knex');
+
+const register = require('./controllers/register');
+const signin = require('./controllers/signin');
+const profile = require('./controllers/profile');
+const image = require('./controllers/image');
 
 const db = knex({
   client: 'pg',
@@ -14,96 +19,18 @@ const db = knex({
   }
 });
 
+const app = express();
 
-const database = {
-  users: [{
-    id: '123',
-    name: 'Andrei',
-    email: 'john@gmail.com',
-    entries: 0,
-    joined: new Date()
-  }],
-  secrets: {
-    users_id: '123',
-    hash: 'wghhh'
-  }
-}
-
-app.use(cors());
+app.use(cors())
 app.use(bodyParser.json());
-app.get('/', (req, res) => res.send('Hello World!'))
 
-app.post('/signin', (req, res) => {
-  var a = JSON.parser(req.body);
-  if (a.username === database.users[0].email && a.password === database.secrets.hash) {
-    res.send('success');
-  } else {
-    res.json('access denied');
-  }
+app.get('/', (req, res)=> { res.send(db.users) })
+app.post('/signin', signin.handleSignin(db, bcrypt))
+app.post('/register', (req, res) => { register.handleRegister(req, res, db, bcrypt) })
+app.get('/profile/:id', (req, res) => { profile.handleProfileGet(req, res, db)})
+app.put('/image', (req, res) => { image.handleImage(req, res, db)})
+app.post('/imageurl', (req, res) => { image.handleApiCall(req, res)})
+
+app.listen(process.env.PORT || 3010, ()=> {
+  console.log('app is running on port ${process.env.PORT');
 })
-
-app.post('/findface', (req, res) => {
-  database.users.forEach(user => {
-    if (user.email === req.body.email) {
-      user.entries++
-      res.json(user)
-    }
-  });
-  res.json('nope')
-})
-
-
-app.post('/register', (req, res) => {
-  const {email, name, password} = req.body;
-  const hash = bcrypt.hashSync(password);
-  db.transaction(trx =>{
-    trx.insert({
-      hash: hash,
-      email: email,
-    })
-    .into("login")
-    .returning('email')
-    .then(loginEmail => {
-      return trx('users')
-        .returning('*')
-        .insert({
-        email: loginEmail,
-        name: name,
-        joined: new Date()
-        })
-        .then(user =>{
-          res.json(user[0]);
-        })
-    })
-    .then(trx.commit)
-    .catch(trx.rollback)
-  })
-  .catch(err => res.status(400).json("unable to register"))
-})
-
-app.get('/profile/:id', (req, res) => {
-  const { id } = req.params;
-  db.select('*').from('users').where({ 
-  id})
-  .then(user => { res.json(user[0])
-    if(user.length) {
-      res.json(user[0])
-    } else{
-      res.status(400).json('Not found')
-    }
-  })
-  .catch(err => res.status(400).json("error getting user"))
-})
-
-app.put('/image',(req, res)=> {
-  const {id} = req.body;
-  db('users').where('id', '=', id)
-    .increment('entries', 1)
-    .returning('entries')
-    .then(entries => {
-      res.jsonp(entries[0]);
-    })
-    .catch(err => { res.status(400).json("unable to get entries")})
-} )
-
-app.listen(3010, () => console.log('Example app listening on port 3010!'))
